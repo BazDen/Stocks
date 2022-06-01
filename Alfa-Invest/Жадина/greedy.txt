@@ -1,0 +1,97 @@
+// Жадина. Автор: Денис Базарнов, 2020 год. 
+// сайт: КБС.Онлайн
+// почта: kbs.online.service@gmail.com
+// Telegram: @BazDen
+
+function Initialize()
+{
+	StrategyName = "Greedy";
+	AddInput("Price", Inputs.Candle, 1, true, "TTLK=МБ ЦК");
+	AddParameter("Qty", 0, "", 1);
+	AddParameter("first_buy_ratio", 100);
+	AddParameter("first_sell_ratio", 100.3);
+	AddParameter("buy_in_ratio", 98);
+	AddParameter("sec_sell_ratio", 0.3);
+	AddParameter("sec_sell_qty", 2);
+	AddParameter("stage", 0, "", 1);
+	AddParameter("_cur_price", 0, "", 1);
+	AddParameter("_cur_qty", 0, "", 1);
+	AddParameter("_cur_sell_ratio", 0, "", 1);
+	AddParameter("_buy_price", 0, "", 1);
+}
+
+function OnUpdate()
+{
+	if (stage == 0){
+		_buy_price = GetAsk();
+		_cur_qty = 0;
+		_cur_sell_ratio = first_sell_ratio;
+		stage = 1;
+	}
+	else if (stage == 1) 
+	{
+		_cur_price = GetAsk();
+		if (first_buy_ratio == 100)
+		{
+			_buy_price = _cur_price;
+			_cur_qty = Qty;
+			EnterLong(_cur_qty);
+			ShowMessage("Start");
+			PlaySound(InnerSystemSounds.Asterisk);
+			stage = 2;
+		}
+		else if (first_buy_ratio > 100)
+			{
+			if ((_buy_price*first_buy_ratio/100)<_cur_price) 
+				{
+					_buy_price = _cur_price;
+					_cur_qty = Qty;
+					EnterLong(_cur_qty);
+					ShowMessage("Start");
+					PlaySound(InnerSystemSounds.Asterisk);
+					stage = 2;
+				}
+			}
+		else if (first_buy_ratio < 100)
+			{
+			if ((_buy_price*first_buy_ratio/100)>_cur_price) 
+				{
+					_buy_price = _cur_price;
+					_cur_qty = Qty;
+					EnterLong(_cur_qty);
+					ShowMessage("Start");
+					PlaySound(InnerSystemSounds.Asterisk);
+					stage = 2;
+				}
+			}
+	}
+	else if (stage == 2){
+		_cur_price = GetAsk();
+		if ((_buy_price*_cur_sell_ratio/100)<_cur_price)
+		{
+			if (_cur_qty == Qty)
+			{
+				_buy_price = _cur_price;
+				_cur_qty = _cur_qty + sec_sell_qty;
+				EnterLong(sec_sell_qty);
+				PlaySound(InnerSystemSounds.Asterisk);
+			}
+			else if (_cur_qty > Qty)
+			{
+				_buy_price = _cur_price;
+				CloseLong(_cur_qty-Qty);
+				_cur_qty = Qty;
+				_cur_sell_ratio = _cur_sell_ratio;
+				PlaySound(InnerSystemSounds.Asterisk);
+			}
+		}
+		else if ((_buy_price*buy_in_ratio/100)>_cur_price)
+		{
+			_buy_price = _cur_price;
+			_cur_qty = _cur_qty + sec_sell_qty;
+			_cur_sell_ratio = _cur_sell_ratio + sec_sell_ratio;
+			EnterLong(sec_sell_qty);
+			PlaySound(InnerSystemSounds.Asterisk);
+		}
+	}	
+}
